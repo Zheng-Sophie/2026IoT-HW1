@@ -20,6 +20,8 @@ from components.charts import (
 )
 from components.weather_map import render_taiwan_weather_map
 
+st.set_page_config(layout="wide")
+
 # Initialize Weather Service
 @st.cache_resource
 def get_service():
@@ -35,27 +37,40 @@ weather_service = get_service()
 # --- Custom Google Maps Style Full-Screen Layout CSS ---
 st.markdown("""
 <style>
-    /* Remove default Streamlit header & padding margins (stLayoutWrapper / block-container) */
+    html, body, [data-testid="stAppViewContainer"] {
+        overflow-x: hidden !important;
+        width: 100vw !important;
+    }
+
+    /* 1. 隱藏 Streamlit 原生元件 */
     header[data-testid="stHeader"] { display: none !important; }
     footer { display: none !important; }
-    
-    .main .block-container {
-        padding-top: 0rem !important;
-        padding-bottom: 0rem !important;
-        padding-left: 0rem !important;
-        padding-right: 0rem !important;
+    div[data-testid="stDecoration"] { display: none !important; }
+
+    /* 2. 強制打破外層容器的所有寬度與內邊距限制 (關鍵修改) */
+    .stAppViewContainer, .stMain, .stMainBlockContainer, .block-container {
+        padding: 0rem !important;
+        margin: 0rem !important;
         max-width: 100% !important;
+        width: 100% !important;
     }
     
+    /* 移除垂直區塊間的預設間距 */
     div[data-testid="stVerticalBlock"] {
         gap: 0rem !important;
     }
     
-    /* Iframe Map Container Full Height */
+    /* 3. 強制 st_folium 的 iframe 與包裹元件達到 100% 寬度且無邊框 */
     iframe {
         width: 100% !important;
-        height: 85vh !important;
         border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* 讓 streamlit-folium 產生的額外 div 容器也不留空隙 */
+    div[data-testid="stHtml"] {
+        width: 100% !important;
     }
 
     /* Top Floating Control Bar */
