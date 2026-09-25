@@ -20,7 +20,7 @@ class CWAAPIClient:
         """
         if not self.api_key:
             logger.warning("No CWA API key provided. Using fallback dataset.")
-            return self._load_fallback_data()
+            return self._load_fallback_data(dataset_id)
 
         url = f"{CWA_BASE_URL}/{dataset_id}"
         params = {"Authorization": self.api_key}
@@ -42,7 +42,7 @@ class CWAAPIClient:
                 logger.warning(f"Attempt {attempt} failed with error: {e}")
 
         logger.error("All API retries failed. Loading fallback data.")
-        return self._load_fallback_data()
+        return self._load_fallback_data(dataset_id)
 
     def fetch_observations(self) -> dict:
         """Fetch O-A0003-001 Automatic Station Weather Observations"""
@@ -52,12 +52,18 @@ class CWAAPIClient:
         """Fetch F-C0032-001 36h Weather Forecast"""
         return self.fetch_dataset(FORECAST_DATASET_ID)
 
-    def _load_fallback_data(self) -> dict:
+    def _load_fallback_data(self, dataset_id: str = None) -> dict:
         """Load local fallback sample data if available"""
         if SAMPLE_DATA_PATH.exists():
             with open(SAMPLE_DATA_PATH, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                data["_fetched_at"] = datetime.now().isoformat()
-                data["_source"] = "SAMPLE_FALLBACK"
-                return data
+                if dataset_id == OBSERVATION_DATASET_ID:
+                    sub_data = data.get("observation", data)
+                elif dataset_id == FORECAST_DATASET_ID:
+                    sub_data = data.get("forecast", data)
+                else:
+                    sub_data = data
+                sub_data["_fetched_at"] = datetime.now().isoformat()
+                sub_data["_source"] = "SAMPLE_FALLBACK"
+                return sub_data
         return {"success": False, "records": {}, "_source": "EMPTY"}
