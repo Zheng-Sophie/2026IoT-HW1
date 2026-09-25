@@ -4,6 +4,7 @@ import streamlit as st
 from typing import List, Dict, Any, Tuple
 from components.weather_cards import get_weather_emoji
 
+
 # Coordinates for Taiwan 22 County/City Governments (縣市政府位置)
 CITY_GOV_LOCATIONS = {
     "臺北市": {"name": "臺北市政府", "coords": [25.0375, 121.5637], "zoom": 12},
@@ -55,7 +56,7 @@ def render_taiwan_weather_map(
     m = folium.Map(
         location=center,
         zoom_start=zoom,
-        tiles="CartoDB positron",
+        tiles="OpenStreetMap",
         control_scale=True
     )
 
@@ -199,4 +200,4 @@ def render_taiwan_weather_map(
     folium.LayerControl().add_to(m)
 
     # Render map full container height
-    st_folium(m, width="100%", height=850, key="taiwan_weather_fullscreen_map")
+    st_folium(m, use_container_width=True, height=850, key="taiwan_weather_fullscreen_map")
