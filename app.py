@@ -165,6 +165,8 @@ st.markdown("""
         padding: 14px 16px !important;
         box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6) !important;
         pointer-events: auto !important;
+        /* 避免 fixed panel 產生不必要的高度 */
+        margin: 0 !important;
     }
 
     /* 2. Right-Top Information Panel */
@@ -188,6 +190,7 @@ st.markdown("""
         pointer-events: auto !important;
         scrollbar-width: none !important;
         -ms-overflow-style: none !important;
+        margin: 0 !important;
     }
 
     .st-key-floating_info_panel::-webkit-scrollbar {
@@ -421,6 +424,25 @@ else:
 
 last_updated = weather_service.get_last_updated_time()
 time_str = last_updated[11:16] if len(last_updated) >= 16 else (last_updated if last_updated else "即時")
+
+# ============================================================
+# 初始化狀態
+# ============================================================
+
+if "selected_city" not in st.session_state:
+    st.session_state.selected_city = "全台灣"
+
+if "active_layer" not in st.session_state:
+    st.session_state.active_layer = "temperature"
+
+if "show_county_badges" not in st.session_state:
+    st.session_state.show_county_badges = True
+
+if "show_value_labels" not in st.session_state:
+    st.session_state.show_value_labels = True
+
+if "basemap_style" not in st.session_state:
+    st.session_state.basemap_style = "街道地圖 (OSM)"
 
 # ==============================================================================
 # 1. 左上角：地圖控制浮動面板 (🗺️ 地圖控制)
