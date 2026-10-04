@@ -801,7 +801,7 @@ with st.container(key="floating_status_panel"):
         '<div class="panel-title-small">📡 中央氣象署資料</div>',
         unsafe_allow_html=True
     )
-    st.caption(f"{status_badge}　｜　最後觀測時間：{time_str}")
+    st.caption(f"{status_badge}　｜　最後同步時間：{time_str}")
     if api_sync_error:
         st.warning(f"連線備註：{api_sync_error[:60]}")
     if st.button("🔄 立即同步資料", width="stretch", key="manual_sync"):

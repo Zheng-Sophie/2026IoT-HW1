@@ -239,6 +239,8 @@ class DatabaseManager:
                     SELECT fetched_at FROM forecast_records
                     UNION
                     SELECT fetched_at FROM observation_records
+                    UNION
+                    SELECT fetched_at FROM weekly_forecast_records
                 )
             """)
             row = cursor.fetchone()
