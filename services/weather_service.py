@@ -11,10 +11,11 @@ class WeatherService:
         self.db = db_manager or DatabaseManager()
         self.api = api_client or CWAAPIClient()
 
-    def sync_data(self) -> Tuple[int, int]:
+    def sync_data(self) -> Tuple[int, int, int]:
         """Fetch latest API data, parse, and update SQLite database."""
         obs_inserted = 0
         fcst_inserted = 0
+        weekly_inserted = 0
 
         # Sync Observations (O-A0003-001)
         try:
@@ -32,7 +33,15 @@ class WeatherService:
         except Exception as e:
             logger.error(f"Error syncing forecast data: {e}")
 
-        return obs_inserted, fcst_inserted
+        try:
+            weekly_json = self.api.fetch_weekly_forecast()
+            weekly_records = WeatherParser.parse_weekly_forecast_json(weekly_json)
+            weekly_inserted = self.db.save_weekly_forecast_records(weekly_records)
+
+        except Exception as e:
+            logger.exception(f"Error syncing weekly forecast data: {e}")
+
+        return obs_inserted, fcst_inserted, weekly_inserted
 
     def get_cities(self) -> List[str]:
         cities = self.db.get_all_cities()
@@ -47,6 +56,9 @@ class WeatherService:
 
     def get_city_observations(self, city: str) -> List[Dict[str, Any]]:
         return self.db.query_observations_by_city(city)
+
+    def get_city_weekly_forecast(self, city: str) -> List[Dict[str, Any]]:
+        return self.db.query_weekly_forecast_by_city(city)
 
     def get_all_map_stations(self) -> List[Dict[str, Any]]:
         stations = self.db.query_latest_observations()

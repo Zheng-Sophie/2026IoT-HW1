@@ -3,7 +3,14 @@ import logging
 import requests
 import urllib3
 from datetime import datetime
-from config import CWA_API_KEY, CWA_BASE_URL, FORECAST_DATASET_ID, OBSERVATION_DATASET_ID, SAMPLE_DATA_PATH
+from config import (
+    CWA_API_KEY,
+    CWA_BASE_URL,
+    FORECAST_DATASET_ID,
+    OBSERVATION_DATASET_ID,
+    WEEKLY_FORECAST_DATASET_ID,
+    SAMPLE_DATA_PATH
+)
 
 # Disable SSL warnings for CWA certificate quirk
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -51,6 +58,10 @@ class CWAAPIClient:
     def fetch_forecast(self) -> dict:
         """Fetch F-C0032-001 36h Weather Forecast"""
         return self.fetch_dataset(FORECAST_DATASET_ID)
+
+    def fetch_weekly_forecast(self) -> dict:
+        """Fetch F-D0047-091 one-week weather forecast"""
+        return self.fetch_dataset(WEEKLY_FORECAST_DATASET_ID)
 
     def _load_fallback_data(self) -> dict:
         """Load local fallback sample data if available"""

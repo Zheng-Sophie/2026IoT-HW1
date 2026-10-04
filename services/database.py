@@ -64,6 +64,18 @@ class DatabaseManager:
                 )
             """)
 
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS weekly_forecast_records (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    city TEXT NOT NULL,
+                    forecast_date TEXT NOT NULL,
+                    max_temp REAL,
+                    min_temp REAL,
+                    fetched_at TEXT NOT NULL,
+                    UNIQUE(city, forecast_date)
+                )
+            """)
+
             # Indexes for fast querying
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_fcst_city ON forecast_records (city)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_fcst_date ON forecast_records (forecast_date)")
@@ -115,6 +127,29 @@ class DatabaseManager:
             conn.commit()
             return inserted
 
+    def save_weekly_forecast_records(self, records):
+        if not records:
+            return 0
+        inserted = 0
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            for record in records:
+                cursor.execute("""
+                    INSERT INTO weekly_forecast_records (city,forecast_date,max_temp,min_temp,fetched_at)
+                    VALUES (?, ?, ?, ?, ?)
+
+                    ON CONFLICT(city, forecast_date)
+                    DO UPDATE SET
+                        max_temp = excluded.max_temp,
+                        min_temp = excluded.min_temp,
+                        fetched_at = excluded.fetched_at
+                """, (
+                    record["city"],record["forecast_date"],record["max_temp"],record["min_temp"],record["fetched_at"]
+                ))
+                inserted += 1
+            conn.commit()
+            return inserted
+
     def get_all_cities(self) -> List[str]:
         """Return list of distinct cities from DB."""
         with self.get_connection() as conn:
@@ -159,6 +194,16 @@ class DatabaseManager:
                 ) o2 ON o1.station_id = o2.station_id AND o1.obs_time = o2.max_time
             """)
             return [dict(row) for row in cursor.fetchall()]
+
+    def query_weekly_forecast_by_city(self, city):
+        with self.get_connection() as conn:
+            rows = conn.execute("""
+                SELECT city, forecast_date, max_temp, min_temp, fetched_at
+                FROM weekly_forecast_records
+                WHERE city = ?
+                ORDER BY forecast_date LIMIT 7
+            """, (city,)).fetchall()
+            return [dict(row) for row in rows]
 
     def query_city_summary_observations(self) -> List[Dict[str, Any]]:
         """Aggregated observation summary grouped by city."""

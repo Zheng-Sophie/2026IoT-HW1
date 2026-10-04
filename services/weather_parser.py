@@ -73,6 +73,173 @@ class WeatherParser:
         return records
 
     @staticmethod
+    def parse_weekly_forecast_json(json_data: dict, fetched_at: str = None) -> List[Dict[str, Any]]:
+        records = []
+
+        fetched_time = (
+            fetched_at
+            or json_data.get("_fetched_at")
+            or datetime.now().isoformat()
+        )
+
+        # ---------------------------------------------------------
+        # Locate Location list
+        # ---------------------------------------------------------
+
+        locations = []
+
+        # F-D0047-091 actual structure
+        if isinstance(json_data.get("Location"), list):
+            locations = json_data["Location"]
+
+        # Compatibility: wrapped under records
+        elif isinstance(json_data.get("records"), dict):
+            records_data = json_data["records"]
+            locs_container = records_data.get("Locations") or records_data.get("locations")
+            if isinstance(locs_container, list):
+                for item in locs_container:
+                    if isinstance(item, dict):
+                        sub_locs = item.get("Location") or item.get("location") or []
+                        if isinstance(sub_locs, list):
+                            locations.extend(sub_locs)
+            elif isinstance(locs_container, dict):
+                sub_locs = locs_container.get("Location") or locs_container.get("location") or []
+                if isinstance(sub_locs, list):
+                    locations.extend(sub_locs)
+
+            if not locations:
+                locations = records_data.get("Location") or records_data.get("location") or []
+            if not locations:
+                locations = records_data.get("locations") or []
+
+        # Compatibility: wrapped under Locations
+        elif isinstance(json_data.get("Locations"), list):
+            for item in json_data["Locations"]:
+                if isinstance(item, dict):
+                    sub_locs = item.get("Location") or item.get("location") or []
+                    if isinstance(sub_locs, list):
+                        locations.extend(sub_locs)
+        elif isinstance(json_data.get("Locations"), dict):
+            locations = json_data["Locations"].get("Location") or json_data["Locations"].get("location") or []
+
+        logger.info(
+            f"F-D0047-091 parser found {len(locations)} locations"
+        )
+
+        # ---------------------------------------------------------
+        # Parse each city
+        # ---------------------------------------------------------
+
+        for loc in locations:
+
+            city_name = (
+                loc.get("LocationName")
+                or loc.get("locationName")
+                or ""
+            )
+
+            if not city_name:
+                continue
+
+            weather_elements = (
+                loc.get("WeatherElement")
+                or loc.get("weatherElement")
+                or []
+            )
+
+            daily_max_temps = {}
+            daily_min_temps = {}
+            daily_avg_temps = {}
+
+            for element in weather_elements:
+
+                element_name = (
+                    element.get("ElementName")
+                    or element.get("elementName")
+                    or ""
+                )
+
+                time_list = (
+                    element.get("Time")
+                    or element.get("time")
+                    or []
+                )
+
+                for time_item in time_list:
+
+                    start_time = (
+                        time_item.get("StartTime")
+                        or time_item.get("startTime")
+                        or ""
+                    )
+
+                    if not start_time:
+                        continue
+
+                    # Example:
+                    # 2026-10-04T12:00:00+08:00
+                    # -> 2026-10-04
+                    forecast_date = start_time.split("T")[0]
+
+                    element_values = (
+                        time_item.get("ElementValue")
+                        or time_item.get("elementValue")
+                        or []
+                    )
+
+                    if not element_values:
+                        continue
+
+                    val_dict = element_values[0] if isinstance(element_values, list) else element_values
+
+                    if element_name == "最高溫度":
+                        temp = WeatherParser._safe_float(
+                            val_dict.get("MaxTemperature") or val_dict.get("Temperature") or val_dict.get("value")
+                        )
+                        if temp is not None:
+                            daily_max_temps.setdefault(forecast_date, []).append(temp)
+                    elif element_name == "最低溫度":
+                        temp = WeatherParser._safe_float(
+                            val_dict.get("MinTemperature") or val_dict.get("Temperature") or val_dict.get("value")
+                        )
+                        if temp is not None:
+                            daily_min_temps.setdefault(forecast_date, []).append(temp)
+                    elif element_name == "平均溫度":
+                        temp = WeatherParser._safe_float(
+                            val_dict.get("Temperature") or val_dict.get("value")
+                        )
+                        if temp is not None:
+                            daily_avg_temps.setdefault(forecast_date, []).append(temp)
+
+            # -----------------------------------------------------
+            # Calculate daily max/min
+            # -----------------------------------------------------
+
+            all_dates = sorted(set(list(daily_max_temps.keys()) + list(daily_min_temps.keys()) + list(daily_avg_temps.keys())))
+            for forecast_date in all_dates:
+                max_list = daily_max_temps.get(forecast_date, [])
+                min_list = daily_min_temps.get(forecast_date, [])
+                avg_list = daily_avg_temps.get(forecast_date, [])
+
+                max_t = max(max_list) if max_list else (max(avg_list) if avg_list else None)
+                min_t = min(min_list) if min_list else (min(avg_list) if avg_list else None)
+
+                if max_t is not None or min_t is not None:
+                    records.append({
+                        "city": city_name,
+                        "forecast_date": forecast_date,
+                        "max_temp": max_t,
+                        "min_temp": min_t,
+                        "fetched_at": fetched_time
+                    })
+
+        logger.info(
+            f"F-D0047-091 parser generated {len(records)} records"
+        )
+
+        return records
+    
+    @staticmethod
     def parse_observation_json(json_data: dict, fetched_at: str = None) -> List[Dict[str, Any]]:
         """
         Parse O-A0003-001 Observation JSON into structured records for SQLite.

@@ -60,33 +60,16 @@ def render_summary_cards(hottest: Dict[str, Any], coolest: Dict[str, Any], max_d
 
 def render_city_cards(city_name: str, forecast_records: List[Dict[str, Any]], obs_records: List[Dict[str, Any]]):
     """Render detailed cards for the selected city."""
-    st.subheader(f"📍 {city_name} 當前天氣預報與觀測")
     
     # 1. Latest Observation card if available
-    if obs_records:
-        latest_obs = obs_records[0]
-        emoji = get_weather_emoji(latest_obs.get("weather", ""))
-        
-        st.markdown(f"#### {emoji} 實測天氣觀測（站點：{latest_obs.get('station_name', '縣市站')} - {latest_obs.get('town', '')}）")
-        c1, c2, c3, c4, c5 = st.columns(5)
-        
-        temp_val = f"{latest_obs['temp']}°C" if latest_obs.get('temp') is not None else "N/A"
-        max_val = f"{latest_obs['max_temp']}°C" if latest_obs.get('max_temp') is not None else "N/A"
-        min_val = f"{latest_obs['min_temp']}°C" if latest_obs.get('min_temp') is not None else "N/A"
-        hum_val = f"{latest_obs['humidity']}%" if latest_obs.get('humidity') is not None else "N/A"
-        rain_val = f"{latest_obs['rain']} mm" if latest_obs.get('rain') is not None else "0.0 mm"
-
-        c1.metric("氣溫", temp_val, delta=latest_obs.get("weather", ""))
-        c2.metric("最高溫 (High)", max_val)
-        c3.metric("最低溫 (Low)", min_val)
-        c4.metric("相對濕度", hum_val)
-        c5.metric("累積雨量", rain_val)
-
-    st.markdown("---")
-
+    
     # 2. 36-Hour Forecast Cards
     if forecast_records:
-        st.markdown("#### 📅 今明 36 小時天氣預報")
+        st.markdown(
+            '<div style="font-size: 20px">📅 今明 36 小時天氣預報</div>',
+            unsafe_allow_html=True
+        )
+        #st.markdown("#### 📅 今明 36 小時天氣預報")
         cols = st.columns(min(len(forecast_records), 3))
         
         for idx, rec in enumerate(forecast_records[:3]):
@@ -95,7 +78,7 @@ def render_city_cards(city_name: str, forecast_records: List[Dict[str, Any]], ob
                 end_t = rec['end_time'].split(' ')[-1] if ' ' in rec['end_time'] else rec['end_time']
                 emoji = get_weather_emoji(rec.get('weather', ''))
                 
-                st.markdown(f"**時段 {idx+1} ({start_t} ~ {end_t})**")
+                st.markdown(f"**({start_t} ~ {end_t})**")
                 st.markdown(f"### {emoji} {rec.get('weather', '')}")
                 st.write(f"🌡️ **溫度:** {rec.get('min_temp')}°C ~ {rec.get('max_temp')}°C")
                 st.write(f"💧 **降雨機率:** {rec.get('pop')}%")

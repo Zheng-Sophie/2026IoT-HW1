@@ -99,9 +99,10 @@ class TestWeatherPipeline(unittest.TestCase):
 
     def test_05_service_sync(self):
         """Test complete data sync pipeline."""
-        obs_cnt, fcst_cnt = self.service.sync_data()
+        obs_cnt, fcst_cnt, weekly_cnt = self.service.sync_data()
         self.assertGreater(obs_cnt, 0)
         self.assertGreater(fcst_cnt, 0)
+        self.assertGreater(weekly_cnt, 0)
 
         cities = self.service.get_cities()
         self.assertGreater(len(cities), 0)

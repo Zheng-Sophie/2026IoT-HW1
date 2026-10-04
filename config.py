@@ -11,6 +11,7 @@ CWA_API_KEY = os.getenv("CWA_API_KEY", "")
 # Datasets
 OBSERVATION_DATASET_ID = "O-A0003-001"  # 自動氣象站觀測資料
 FORECAST_DATASET_ID = "F-C0032-001"     # 一般天氣預報-今明36小時天氣預報
+WEEKLY_FORECAST_DATASET_ID = "F-D0047-091"
 
 CWA_BASE_URL = "https://opendata.cwa.gov.tw/api/v1/rest/datastore"
 
