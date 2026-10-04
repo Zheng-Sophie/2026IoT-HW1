@@ -1,133 +1,219 @@
-# 🇹🇼 Taiwan Weather Forecast Dashboard (全台天氣預報與即時觀測系統)
+# 物聯網應用與資料分析 — 台灣即時天氣地圖
 
-本專案遵循 `myplan.md` 開發規範，建立一個結合中央氣象署 (CWA) Open Data API、SQLite 資料庫、Streamlit Web Dashboard 與 Folium 互動地圖的全台天氣系統。
+**Live Demo 網址：[台灣即時天氣地圖 · Streamlit](https://agnes-iot-hw1.streamlit.app/)**
 
----
+![展示圖](image.png)
 
-## 🌟 系統特色與核心架構
+## 📌 介紹
 
-本系統涵蓋完整的資料處理與展示流程：
+本專案為「物聯網應用與資料分析」課程作業，使用中央氣象署（CWA）Open Data 取得氣象資料，透過 Python 進行 JSON 資料解析與處理，再使用 SQLite 儲存資料，最後以 Streamlit 建立台灣即時天氣地圖網站。
 
-```text
-中央氣象署 CWA Open Data API (O-A0003-001 / F-C0032-001)
-                    │
-                    ▼
-          requests (自動重試 + TLS / Fallback)
-                    │
-                    ▼
-         JSON Parser (weather_parser.py)
-                    │
-                    ▼
-          SQLite Database (database/weather.db)
-                    │
-                    ▼
-          Weather Service (weather_service.py)
-        ┌───────────┼───────────┐
-        ▼           ▼           ▼
-   Streamlit UI   Plotly圖表  Folium地圖 (363測站)
-```
+本次作業的主要目的，是實際完成從**資料取得、資料分析、資料儲存到資料視覺化**的完整流程，並透過 AI Coding 工具協助進行程式開發與除錯。
 
-1. **CWA API 串接 (`O-A0003-001` & `F-C0032-001`)**
-   - 支援自動氣象站實測資料 (`O-A0003-001`) 與今明 36 小時天氣預報 (`F-C0032-001`)。
-   - 使用 `.env` 安全管理 API Key，不上傳私密資料。
-   - 包含離線備份資料庫 (`data/sample.json`)，無網路或 API Key 遺失時自動降級備用。
-
-2. **JSON 資料結構化與 SQLite 資料庫**
-   - 建立 `forecast_records` 與 `observation_records` 資料表。
-   - 自動去重與建立 `city` / `start_time` / `obs_time` 索引，避免無上限重複數據。
-
-3. **Streamlit 互動視覺化 Dashboard**
-   - **全台觀測概況與縣市卡片**：即時顯示高溫、低溫、累積雨量、舒適度與天氣現象。
-   - **溫度趨勢折線圖**：Plotly 呈現 36 小時最高溫與最低溫變化趨勢。
-   - **縣市氣象資料查詢**：選單自由切換 22 縣市。
-
-4. **Folium 台灣互動天氣地圖**
-   - 全台 363 個氣象測站 Marker 標記。
-   - 依據雨量與氣溫自動呈現動態顏色與圖示。
-   - 點擊氣象站可開啟 Popup 查看即時氣溫、日高/低溫、相對濕度與氣象描述。
-
-5. **資料分析與規則分類**
-   - 日夜溫差計算 (`溫差 = 最高溫 - 最低溫`)。
-   - 降雨機率規則化分類 (`<30% 低降雨`, `30%~60% 中降雨`, `>=60% 高降雨`)。
-
----
-
-## 📁 專案檔案結構
+### 系統資料流程
 
 ```text
-HW1/
-├── app.py                      # Streamlit Web App 主程式
-├── config.py                   # 系統與 API 相關組態設定
-├── requirements.txt            # Python 套件相依清單
-├── README.md                   # 本說明文件
-├── myplan.md                   # 課程開發計畫需求
-├── .env                        # API Key 環境變數 (Git 排除)
-├── .env.example                # API Key 範本
-├── .gitignore                  # Git 忽略設定
-│
-├── database/
-│   └── weather.db              # SQLite 資料庫儲存檔
-│
-├── services/
-│   ├── cwa_api.py              # CWA API 請求與 Retry 模組
-│   ├── weather_parser.py       # CWA JSON 解析與正規化
-│   ├── database.py             # SQLite CRUD 與 Table 索引管理
-│   └── weather_service.py      # 業務邏輯與氣象分析服務
-│
-├── components/
-│   ├── weather_cards.py        # Streamlit 氣象卡片與指標
-│   ├── charts.py               # Plotly 趨勢圖與縣市比較圖
-│   └── weather_map.py          # Folium 台灣互動地圖
-│
-├── data/
-│   └── sample.json             # 離線備用氣象 JSON 數據
-│
-└── tests/
-    └── test_weather_pipeline.py# 單元測試套件 (API/Parser/DB/Service)
+CWA Open Data
+      ↓
+   Python API
+      ↓
+     JSON
+      ↓
+  資料解析與整理
+      ↓
+    SQLite
+      ↓
+   SQL 查詢
+      ↓
+   Streamlit
+      ↓
+台灣即時天氣地圖
 ```
 
 ---
 
-## 🚀 快速開始與執行方式
+## 🌦️ 資料來源
 
-### 1. 安裝套件相依
-建議使用 Python 3.10+ 環境：
+本專案使用中央氣象署（CWA）Open Data：
 
-```bash
-pip install -r requirements.txt
-```
+**O-A0003-001｜氣象觀測站－10分鐘綜觀氣象資料**
 
-### 2. 設定 API Key
-將 `.env.example` 複製為 `.env` 並填入您的中央氣象署 API Key：
+透過 API 取得氣象觀測資料，並將資料經過整理後提供網站使用。
 
-```env
-CWA_API_KEY=YOUR_CWA_API_KEY
-```
+主要學習內容包含：
 
-### 3. 執行單元測試
-驗證 API 串接、JSON 解析、SQLite 寫入與氣象分析邏輯：
+- API Key 使用
+- HTTP Request
+- JSON 資料取得
+- JSON 資料解析
+- 氣象資料整理
+- SQLite 資料儲存
+- SQL 查詢
+- Streamlit 網頁呈現
 
-```bash
-python -m unittest discover tests
-```
-
-### 4. 啟動 Streamlit Dashboard 網站
-
-```bash
-streamlit run app.py
-```
-
-瀏覽器會自動開啟 `http://localhost:8501`。
+> API Key 不會直接寫入程式碼，實際使用時透過環境變數管理。
 
 ---
 
-## 🧪 自動化測試結果
+## 🗺️ 網站功能
 
-執行 `python -m unittest discover tests` 輸出：
-- `test_01_api_fetch`: API 連線與數據取得測試 🟢
-- `test_02_json_parsing`: CWA JSON 結構轉換測試 🟢
-- `test_03_sqlite_database_crud`: SQLite CRUD 與去重機制測試 🟢
-- `test_04_pop_classification`: 降雨機率規則分類測試 🟢
-- `test_05_service_sync`: 全流程同步與分析計算測試 🟢
+本網站以台灣互動地圖作為主要畫面，將氣象資料以地圖、資訊面板與圖表方式呈現。
 
-**Ran 5 tests: OK**
+主要功能包括：
+
+- 台灣互動天氣地圖
+- 全台氣象站資料
+- 氣溫資訊
+- 天氣資訊
+- 左側地圖控制面板
+- 右側全台即時資訊面板
+- 縣市詳細天氣資訊
+- 一週溫度趨勢
+- 一週溫度資料表
+- 氣象資料視覺化
+
+網站的整體操作方式以「地圖為主要畫面」為設計方向，讓使用者可以透過地圖快速查看不同地區的天氣資訊。
+
+---
+
+# 📚 學習重點與心得
+
+## 1. API 資料取得
+
+本次作業首先學習如何透過中央氣象署提供的 Open Data API 取得氣象資料。
+
+透過 API，可以讓程式直接取得最新的氣象資訊，而不需要人工下載或輸入資料。在實作過程中，我學習到 API Key、HTTP Request、API 回應資料以及錯誤處理等基本概念。
+
+這讓我了解到，在物聯網應用中，API 可以作為不同系統之間交換資料的重要方式，資料可以從外部服務取得後，再交由自己的程式進行後續處理。
+
+---
+
+## 2. JSON 資料分析
+
+取得 API 資料後，需要先解析 JSON 才能進一步使用。
+
+CWA 回傳的 JSON 具有多層結構，因此需要透過 Python 將其中需要的資料取出並重新整理。
+
+這次實作學習到：
+
+- JSON 的基本結構
+- List 與 Dictionary 的資料處理
+- 巢狀 JSON 資料解析
+- 資料欄位擷取
+- 資料格式整理
+- 缺失資料處理
+
+透過這個過程，我了解到資料分析不只是最後的圖表製作，前面的資料清理與格式整理同樣非常重要。
+
+---
+
+## 3. SQLite 資料庫
+
+完成 JSON 資料解析後，將整理好的資料儲存至 SQLite。
+
+透過這次實作，我學習到基本的資料庫概念，例如：
+
+- 建立 SQLite Database
+- 建立資料表
+- 設計資料欄位
+- Primary Key
+- INSERT
+- SELECT
+- SQL Query
+- 資料更新
+- 避免重複資料
+
+使用資料庫後，網站就不需要每次都直接處理完整的 API JSON，而是可以先將資料保存，再透過 SQL 查詢需要的資料。
+
+因此形成：
+
+```text
+API
+ ↓
+資料處理
+ ↓
+SQLite
+ ↓
+SQL Query
+ ↓
+Web App
+```
+
+這樣的資料流程也讓我更了解資料儲存與應用程式之間的關係。
+
+---
+
+## 4. AI Coding 實作流程
+
+這次作業另一個重要的學習是使用 AI Coding 工具協助完成專案。
+
+透過 AI Coding，可以協助進行：
+
+```text
+需求規劃
+   ↓
+程式架構
+   ↓
+程式碼生成
+   ↓
+執行測試
+   ↓
+發現錯誤
+   ↓
+AI 協助除錯
+   ↓
+修改程式
+   ↓
+再次測試
+```
+
+實際使用後，我發現 AI Coding 並不是只需要輸入一句需求就可以直接完成整個專案。當程式逐漸變得複雜時，如果沒有清楚的需求與架構規劃，AI 產生的程式可能會出現功能衝突或錯誤。
+
+因此這次作業讓我了解到，使用 AI Coding 時，開發者仍然需要具備：
+
+- 需求分析能力
+- 程式閱讀能力
+- 錯誤分析能力
+- 系統架構概念
+- 測試與驗證能力
+
+AI 可以協助加快開發速度，但最終仍需要由開發者確認程式是否符合需求。
+
+---
+
+# 💡 作業心得
+
+這次作業最大的收穫，是將之前分開學習的技術實際串接起來。
+
+過去學習 API、Python、JSON、SQL 或 Streamlit 時，可能都是單獨使用；透過這次作業，第一次比較完整地看到這些技術如何組合成一個實際的資料應用系統。
+
+整體流程從：
+
+> **取得資料 → 分析資料 → 儲存資料 → 查詢資料 → 視覺化資料**
+
+讓我更加理解資料分析與物聯網應用的實際開發流程。
+
+另外，透過 AI Coding 工具進行開發，也讓我體會到現在的程式開發方式與過去有所不同。AI 可以協助產生程式碼、找出錯誤與提供修改方向，但使用者仍然必須理解自己的需求以及程式的運作方式。
+
+因此這次作業不只是完成一個天氣網站，也讓我學習到如何將：
+
+**API + Python + JSON + SQLite + Streamlit + AI Coding**
+
+整合成一個完整的應用程式。
+
+---
+
+## 📝 總結
+
+本次作業讓我實際完成一個從公開資料到 Web Application 的完整流程，也更加熟悉：
+
+- **API 資料取得**
+- **JSON 資料分析**
+- **SQLite 資料庫**
+- **Streamlit 網頁應用**
+- **資料視覺化**
+- **AI Coding 實作流程**
+
+透過這次實作，我了解到一個完整的資料應用程式不只是前端畫面，而是需要將資料來源、資料處理、資料儲存與使用者介面整合起來。
+
+這些技術與開發經驗也能延伸應用到未來的物聯網、資料分析及其他軟體開發專案中。
