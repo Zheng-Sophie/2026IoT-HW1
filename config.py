@@ -1,12 +1,18 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import streamlit as st
 
 # Load environment variables from .env file
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
 CWA_API_KEY = os.getenv("CWA_API_KEY", "")
+if not CWA_API_KEY:
+    try:
+        CWA_API_KEY = st.secrets.get("CWA_API_KEY", "")
+    except Exception:
+        CWA_API_KEY = ""
 
 # Datasets
 OBSERVATION_DATASET_ID = "O-A0003-001"  # 自動氣象站觀測資料
