@@ -3,6 +3,7 @@ import logging
 import requests
 import urllib3
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from config import (
     CWA_API_KEY,
     CWA_BASE_URL,
@@ -38,7 +39,7 @@ class CWAAPIClient:
                 if response.status_code == 200:
                     data = response.json()
                     if data.get("success") == "true" or data.get("success") is True:
-                        data["_fetched_at"] = datetime.now().isoformat()
+                        data["_fetched_at"] = datetime.now(ZoneInfo("Asia/Taipei")).isoformat()
                         data["_source"] = "CWA_API"
                         return data
                     else:

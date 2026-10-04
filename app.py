@@ -2,6 +2,7 @@ import logging
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 from config import CWA_API_KEY
@@ -516,7 +517,23 @@ else:
     rain_info_str = "全台晴朗無顯著降雨"
 
 last_updated = weather_service.get_last_updated_time()
-time_str = last_updated[11:16] if len(last_updated) >= 16 else (last_updated if last_updated else "即時")
+if last_updated:
+    try:
+        dt = datetime.fromisoformat(last_updated)
+
+        # 如果資料沒有時區資訊，視為台灣時間
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=ZoneInfo("Asia/Taipei"))
+
+        # 統一轉成台灣時間
+        dt = dt.astimezone(ZoneInfo("Asia/Taipei"))
+
+        time_str = dt.strftime("%H:%M")
+
+    except (ValueError, TypeError):
+        time_str = last_updated[:16]
+else:
+    time_str = "即時"
 
 # ============================================================
 # 初始化狀態
